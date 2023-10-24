@@ -18,7 +18,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final List<Certificate> _certificates = [];
   Uint8List datasigned = Uint8List(0);
-  final RsaDigitalsignature _certificatePluginWindowsPlugin =
+  final RsaDigitalsignature _rsaDigitalSignaturePlugin =
       RsaDigitalsignature();
   Certificate? _selectedCertificate;
   final TextEditingController _messageController = TextEditingController();
@@ -32,7 +32,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> initPlatformState() async {
     try {
       _certificates
-          .addAll(await _certificatePluginWindowsPlugin.getCertifications());
+          .addAll(await _rsaDigitalSignaturePlugin.getCertifications());
     } on PlatformException {
       // Handle the exception...
     }
@@ -46,7 +46,7 @@ class _MyAppState extends State<MyApp> {
       final Uint8List dataToSign = Uint8List.fromList(utf8.encode(message));
       final Digest hash = sha256.convert(dataToSign);
       final dynamic publickey =
-          await _certificatePluginWindowsPlugin.signWithprivatekey(
+          await _rsaDigitalSignaturePlugin.signWithprivatekey(
               (hash.bytes as Uint8List), _selectedCertificate!.publickey);
       datasigned =
           Uint8List.fromList(List<int>.from(publickey as List<dynamic>));
