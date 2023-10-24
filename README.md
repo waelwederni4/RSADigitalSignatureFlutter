@@ -1,9 +1,9 @@
 # RSA Digital Signature
 
 Library for SignData use RSACNG privateKey with support for macos, windows
-![Screenshot of choise certificate](/screenshot/1.png)
-![Screenshot of Sign Data](/screenshot/2.png)
-![Screenshot of Data signed](/screenshot/3.png)
+![Screenshot of choise certificate](https://imgur.com/WwpCUgC)
+![Screenshot of Sign Data](https://imgur.com/R1dLYSI)
+![Screenshot of Data signed](https://imgur.com/4a7vukg)
 
 ## Usage
 
