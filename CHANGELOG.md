@@ -1,5 +1,9 @@
 ## 1.0.2
 
+- Fix Size Hash for Windows
+
+## 1.0.2
+
 - Update Spec
 
 ## 1.0.1

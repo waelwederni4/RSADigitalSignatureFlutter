@@ -12,42 +12,46 @@
 #include <sstream>
 #include <vector>
 
-namespace rsa_digitalsignature {
-
-// static
-void RsaDigitalsignaturePlugin::RegisterWithRegistrar(
-    flutter::PluginRegistrarWindows *registrar) {
-  auto channel =
-      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          registrar->messenger(), "rsa_digitalsignature",
-          &flutter::StandardMethodCodec::GetInstance());
-
-  auto plugin = std::make_unique<RsaDigitalsignaturePlugin>();
-
-  channel->SetMethodCallHandler(
-      [plugin_pointer = plugin.get()](const auto &call, auto result) {
-        plugin_pointer->HandleMethodCall(call, std::move(result));
-      });
-
-  registrar->AddPlugin(std::move(plugin));
-}
-
-RsaDigitalsignaturePlugin::RsaDigitalsignaturePlugin() {}
-
-RsaDigitalsignaturePlugin::~RsaDigitalsignaturePlugin() {}
-
-std::string WideStringToNarrowString(const wchar_t *wideStr)
+namespace rsa_digitalsignature
 {
+
+  // static
+  void RsaDigitalsignaturePlugin::RegisterWithRegistrar(
+      flutter::PluginRegistrarWindows *registrar)
+  {
+    auto channel =
+        std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+            registrar->messenger(), "rsa_digitalsignature",
+            &flutter::StandardMethodCodec::GetInstance());
+
+    auto plugin = std::make_unique<RsaDigitalsignaturePlugin>();
+
+    channel->SetMethodCallHandler(
+        [plugin_pointer = plugin.get()](const auto &call, auto result)
+        {
+          plugin_pointer->HandleMethodCall(call, std::move(result));
+        });
+
+    registrar->AddPlugin(std::move(plugin));
+  }
+
+  RsaDigitalsignaturePlugin::RsaDigitalsignaturePlugin() {}
+
+  RsaDigitalsignaturePlugin::~RsaDigitalsignaturePlugin() {}
+
+  std::string WideStringToNarrowString(const wchar_t *wideStr)
+  {
     int len = WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, NULL, 0, NULL, NULL);
     std::string narrowStr(len, 0);
     WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, &narrowStr[0], len, NULL, NULL);
     return narrowStr;
-}
+  }
 
-void RsaDigitalsignaturePlugin::HandleMethodCall(
-    const flutter::MethodCall<flutter::EncodableValue> &method_call,
-    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
- if (method_call.method_name().compare("getCertifications") == 0)
+  void RsaDigitalsignaturePlugin::HandleMethodCall(
+      const flutter::MethodCall<flutter::EncodableValue> &method_call,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
+  {
+    if (method_call.method_name().compare("getCertifications") == 0)
     {
       std::vector<std::vector<uint8_t>> certDerList;
       HCERTSTORE hCertStore = CertOpenSystemStore(NULL, L"MY");
@@ -110,9 +114,7 @@ void RsaDigitalsignaturePlugin::HandleMethodCall(
                   HCRYPTPROV_OR_NCRYPT_KEY_HANDLE hCryptProvOrNCryptKey = 0;
                   DWORD dwKeySpec = 0;
                   BOOL bFreeHandle = FALSE;
-                  PCERT_PUBLIC_KEY_INFO pPublicKeyInfo = &pCertContext->pCertInfo->SubjectPublicKeyInfo;
-                  LPSTR pszObjId = pPublicKeyInfo->Algorithm.pszObjId;
-                  printf("Object Identifier (OID): %s\n", pszObjId);
+
                   BOOL bResult = CryptAcquireCertificatePrivateKey(
                       pCertContext,
                       CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG,
@@ -123,78 +125,125 @@ void RsaDigitalsignaturePlugin::HandleMethodCall(
 
                   if (bResult)
                   {
-                    NCRYPT_KEY_HANDLE hPrivateKey = (NCRYPT_KEY_HANDLE)hCryptProvOrNCryptKey;
-
-                    // Set up the signing parameters
-                    BCRYPT_PKCS1_PADDING_INFO paddingInfo = {0};
-                    paddingInfo.pszAlgId = BCRYPT_SHA256_ALGORITHM;
-
-                    DWORD cbSignature = 0;
-                    DWORD cbData = static_cast<DWORD>(dataToSign->size());
-
-                    // Get the size of the signature
-                    NTSTATUS status = NCryptSignHash(
-                        hPrivateKey,
-                        &paddingInfo,
-                        reinterpret_cast<PBYTE>(const_cast<uint8_t *>(dataToSign->data())),
-                        cbData,
-                        NULL,
-                        0,
-                        &cbSignature,
-                        BCRYPT_PAD_PKCS1);
-
-                    if (status == ERROR_SUCCESS)
+                    if (dwKeySpec == CERT_NCRYPT_KEY_SPEC)
                     {
-                      std::vector<BYTE> vSignature(cbSignature);
+                      NCRYPT_KEY_HANDLE hPrivateKey = (NCRYPT_KEY_HANDLE)hCryptProvOrNCryptKey;
 
-                      // Sign the data
-                      NTSTATUS signStatus = NCryptSignHash(
+                      // Set up the signing parameters
+                      BCRYPT_PKCS1_PADDING_INFO paddingInfo = {0};
+                      paddingInfo.pszAlgId = BCRYPT_SHA256_ALGORITHM;
+
+                      DWORD cbSignature = 0;
+                      DWORD cbData = 32;
+
+                      // Get the size of the signature
+                      NTSTATUS status = NCryptSignHash(
                           hPrivateKey,
-                          &paddingInfo, // Pass the address of paddingInfo
+                          &paddingInfo,
                           reinterpret_cast<PBYTE>(const_cast<uint8_t *>(dataToSign->data())),
                           cbData,
-                          vSignature.data(),
-                          cbSignature,
+                          NULL,
+                          0,
                           &cbSignature,
                           BCRYPT_PAD_PKCS1);
 
-                      if (signStatus == ERROR_SUCCESS)
+                      if (status == ERROR_SUCCESS)
                       {
-                        flutter::EncodableValue res = flutter::EncodableValue(vSignature);
-                        result->Success(res);
-                      }
-                      else
-                      {
-                        LPWSTR errorMsg = NULL;
-                        FormatMessage(
-                            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                            NULL,
-                            signStatus, // Your error code
-                            0,          // Default language
-                            (LPWSTR)&errorMsg,
-                            0,
-                            NULL);
+                        std::vector<BYTE> vSignature(cbSignature);
 
-                        if (errorMsg)
+                        // Sign the data
+                        NTSTATUS signStatus = NCryptSignHash(
+                            hPrivateKey,
+                            &paddingInfo, // Pass the address of paddingInfo
+                            reinterpret_cast<PBYTE>(const_cast<uint8_t *>(dataToSign->data())),
+                            cbData,
+                            vSignature.data(),
+                            cbSignature,
+                            &cbSignature,
+                            BCRYPT_PAD_PKCS1);
+
+                        if (signStatus == ERROR_SUCCESS)
                         {
-                          wprintf(L"Error code %d: %s\n", signStatus, errorMsg);
-                          LocalFree(errorMsg);
+                          flutter::EncodableValue res = flutter::EncodableValue(vSignature);
+                          result->Success(res);
                         }
                         else
                         {
-                          wprintf(L"Failed to retrieve error message.\n");
+                          LPWSTR errorMsg = NULL;
+                          FormatMessage(
+                              FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                              NULL,
+                              signStatus, // Your error code
+                              0,          // Default language
+                              (LPWSTR)&errorMsg,
+                              0,
+                              NULL);
+
+                          if (errorMsg)
+                          {
+                            wprintf(L"Error code %d: %s\n", signStatus, errorMsg);
+                            LocalFree(errorMsg);
+                          }
+                          else
+                          {
+                            wprintf(L"Failed to retrieve error message.\n");
+                          }
+                          result->Error("SignError", "Failed to sign data", nullptr);
                         }
-                        result->Error("SignError", "Failed to sign data", nullptr);
+                      }
+                      else
+                      {
+                        result->Error("SignError", "Failed to get signature size", nullptr);
                       }
                     }
-                    else
+                    else if (dwKeySpec == AT_SIGNATURE)
                     {
-                      result->Error("SignError", "Failed to get signature size", nullptr);
+                      // Key from a CSP: CryptAPI is used.
+                      HCRYPTHASH hHash;
+                      HCRYPTPROV hCryptProv = (HCRYPTPROV)hCryptProvOrNCryptKey;
+
+                      if (CryptCreateHash(hCryptProv, CALG_SHA_256, 0, 0, &hHash))
+                      {
+                        if (CryptSetHashParam(hHash, HP_HASHVAL, dataToSign->data(), 0))
+                        {
+                          BYTE *pbSignature = NULL;
+                          DWORD cbSignature = 0;
+
+                          // Determine the size required for the signature.
+                          if (!CryptSignHash(hHash, AT_SIGNATURE, NULL, 0, NULL, &cbSignature))
+                          {
+                            // Handle error
+                          }
+
+                          pbSignature = new BYTE[cbSignature];
+
+                          if (CryptSignHash(hHash, AT_SIGNATURE, NULL, 0, pbSignature, &cbSignature))
+                          {
+                            flutter::EncodableValue res = flutter::EncodableValue(std::vector<BYTE>(pbSignature, pbSignature + cbSignature));
+                            result->Success(res);
+                          }
+                          else
+                          {
+                            // Handle error
+                          }
+
+                          delete[] pbSignature;
+                        }
+
+                        CryptDestroyHash(hHash);
+                      }
                     }
 
                     if (bFreeHandle)
                     {
-                      NCryptFreeObject(hPrivateKey);
+                      if (dwKeySpec == CERT_NCRYPT_KEY_SPEC)
+                      {
+                        NCryptFreeObject(hCryptProvOrNCryptKey);
+                      }
+                      else
+                      {
+                        CryptReleaseContext(hCryptProvOrNCryptKey, 0);
+                      }
                     }
                   }
                   else
@@ -238,6 +287,6 @@ void RsaDigitalsignaturePlugin::HandleMethodCall(
     {
       result->NotImplemented();
     }
-}
+  }
 
-}  // namespace rsa_digitalsignature
+} // namespace rsa_digitalsignature
