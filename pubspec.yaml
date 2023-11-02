@@ -1,6 +1,6 @@
 name: rsa_digitalsignature
 description: A plugin for signing data with privateKey RSACNG for windows & MacOS.
-version: 1.0.3
+version: 1.0.4
 homepage: https://github.com/waelwederni4/RSADigitalSignatureFlutter
 
 environment:

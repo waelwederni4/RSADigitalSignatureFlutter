@@ -1,3 +1,7 @@
+## 1.0.4
+
+- Fix retreive certificate
+
 ## 1.0.3
 
 - Fix Size Hash for Windows

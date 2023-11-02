@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:rsa_digitalsignature/certificate.dart';
 import 'package:asn1lib/asn1lib.dart';
+import 'dart:typed_data';
 import 'package:x509/x509.dart' as x509Cert;
 import 'rsa_digitalsignature_platform_interface.dart';
 
@@ -21,10 +22,10 @@ class MethodChannelRsaDigitalsignature extends RsaDigitalsignaturePlatform {
       }
       return response.where((item) {
         try {
-          if (item is! List<dynamic>) {
+          if (item is! UnmodifiableUint8ListView) {
             return false;
           }
-          final bytes = Uint8List.fromList(item.cast<int>());
+          final bytes = Uint8List.fromList(item);
           final asn1Parser = ASN1Parser(bytes);
           final asn1Sequence = asn1Parser.nextObject();
           if (asn1Sequence is! ASN1Sequence) {
@@ -44,14 +45,14 @@ class MethodChannelRsaDigitalsignature extends RsaDigitalsignaturePlatform {
           return false;
         }
       }).map<Certificate>((item) {
-        final bytes = Uint8List.fromList(item.cast<int>());
+        final bytes = Uint8List.fromList(item);
         final asn1Parser = ASN1Parser(bytes);
         final asn1Sequence = asn1Parser.nextObject() as ASN1Sequence;
         final x509 = x509Cert.X509Certificate.fromAsn1(asn1Sequence);
         final subjectNames = x509.tbsCertificate.subject?.names;
         final cn = subjectNames?[0].values.first.toString();
         return Certificate(
-          publickey: bytes,
+          publickey: item,
           x509certificate: x509,
           cn: cn!,
         );

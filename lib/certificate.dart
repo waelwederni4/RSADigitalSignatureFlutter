@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:x509/x509.dart';
 
 class Certificate {
-  final Uint8List publickey;
+  final UnmodifiableUint8ListView publickey;
   final X509Certificate x509certificate;
   final String cn;
   const Certificate(

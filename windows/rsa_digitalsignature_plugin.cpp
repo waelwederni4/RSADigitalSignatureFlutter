@@ -53,7 +53,7 @@ namespace rsa_digitalsignature
   {
     if (method_call.method_name().compare("getCertifications") == 0)
     {
-      std::vector<std::vector<uint8_t>> certDerList;
+      std::vector<std::vector<BYTE>> certDerList;
       HCERTSTORE hCertStore = CertOpenSystemStore(NULL, L"MY");
       if (hCertStore != NULL)
       {
@@ -66,8 +66,8 @@ namespace rsa_digitalsignature
           {
             if (keyUsage[0] & CERT_NON_REPUDIATION_KEY_USAGE)
             {
-              DWORD size = pCertContext->cbCertEncoded;
-              std::vector<uint8_t> certDer(pCertContext->pbCertEncoded, pCertContext->pbCertEncoded + size);
+              DWORD size = pCertContext->cbCertEncoded; 
+              std::vector<BYTE> certDer(pCertContext->pbCertEncoded, pCertContext->pbCertEncoded + size);
               certDerList.push_back(certDer);
             }
           }
@@ -75,7 +75,7 @@ namespace rsa_digitalsignature
         }
         CertCloseStore(hCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
         flutter::EncodableList encodableCertDerList;
-        for (const std::vector<uint8_t> &certDer : certDerList)
+        for (const std::vector<BYTE> &certDer : certDerList)
         {
           encodableCertDerList.push_back(flutter::EncodableValue(certDer));
         }

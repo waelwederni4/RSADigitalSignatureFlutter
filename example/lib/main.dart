@@ -18,8 +18,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final List<Certificate> _certificates = [];
   Uint8List datasigned = Uint8List(0);
-  final RsaDigitalsignature _rsaDigitalSignaturePlugin =
-      RsaDigitalsignature();
+  final RsaDigitalsignature _rsaDigitalSignaturePlugin = RsaDigitalsignature();
   Certificate? _selectedCertificate;
   final TextEditingController _messageController = TextEditingController();
 
