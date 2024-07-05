@@ -21,6 +21,7 @@ class _MyAppState extends State<MyApp> {
   final RsaDigitalsignature _rsaDigitalSignaturePlugin = RsaDigitalsignature();
   Certificate? _selectedCertificate;
   final TextEditingController _messageController = TextEditingController();
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -30,26 +31,36 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initPlatformState() async {
     try {
-      _certificates
-          .addAll(await _rsaDigitalSignaturePlugin.getCertifications());
-    } on PlatformException {
-      // Handle the exception...
+      final certificates = await _rsaDigitalSignaturePlugin.getCertifications();
+      if (!mounted) return;
+      setState(() {
+        _certificates.addAll(certificates);
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        _errorMessage = "Failed to get certificates: ${e.message}";
+      });
     }
-    if (!mounted) return;
-    setState(() {});
   }
 
   Future<void> signMessage() async {
     if (_selectedCertificate != null && _messageController.text.isNotEmpty) {
-      final String message = _messageController.text;
-      final Uint8List dataToSign = Uint8List.fromList(utf8.encode(message));
-      final Digest hash = sha256.convert(dataToSign);
-      final dynamic publickey =
-          await _rsaDigitalSignaturePlugin.signWithprivatekey(
-              (hash.bytes as Uint8List), _selectedCertificate!.publickey);
-      datasigned =
-          Uint8List.fromList(List<int>.from(publickey as List<dynamic>));
-      setState(() {});
+      try {
+        final String message = _messageController.text;
+        final Uint8List dataToSign = Uint8List.fromList(utf8.encode(message));
+        final Digest hash = sha256.convert(dataToSign);
+        final dynamic publickey =
+            await _rsaDigitalSignaturePlugin.signWithprivatekey(
+                hash.bytes as Uint8List, _selectedCertificate!.publickey);
+        setState(() {
+          datasigned =
+              Uint8List.fromList(List<int>.from(publickey as List<dynamic>));
+        });
+      } on PlatformException catch (e) {
+        setState(() {
+          _errorMessage = "Failed to sign message: ${e.message}";
+        });
+      }
     }
   }
 
@@ -59,12 +70,17 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: const Center(child: Text('RSA Digital Signature example app')),
+          title: const Center(child: Text('RSA Digital Signature Example App')),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: <Widget>[
+              if (_errorMessage.isNotEmpty)
+                Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                ),
               Align(
                 alignment: Alignment.center,
                 child: DropdownButton<Certificate>(

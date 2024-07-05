@@ -1,3 +1,8 @@
+## 1.0.5
+
+- Fix issues with the result handling in `signWithprivatekey`.
+- Improve error handling and memory management.
+
 ## 1.0.4
 
 - Fix retreive certificate
